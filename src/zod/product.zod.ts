@@ -1,6 +1,6 @@
 import z from "zod";
 
-const productSchema = z.object({
+const product = {
   name: z
     .string({
       message: 'Necessário um nome para o produto.'
@@ -27,6 +27,22 @@ const productSchema = z.object({
       message: ''
     })
     .min(5, 'Código de fornecedor muito pequeno.'),
-});
+};
+
+const create = z.object(product);
+
+const edit = z.object({
+  name: product.name.optional(),
+  description: product.description,
+  price: product.price.optional(),
+  quantity: product.quantity,
+  category: product.category.optional(),
+  providerId: product.providerId.optional(),
+})
+
+const productSchema = {
+  create,
+  edit,
+};
 
 export default productSchema;

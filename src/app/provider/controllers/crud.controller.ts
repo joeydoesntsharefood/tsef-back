@@ -7,13 +7,15 @@ import catchAsync from "@utils/catchAsync";
 import logger from "@utils/logger";
 
 import { Request, Response } from 'express';
-import { Provider } from "@prisma/client";
+import { Prisma, Provider } from "@prisma/client";
+import { AuthRequest } from "src/types/auth.type";
+import { DefaultArgs } from "@prisma/client/runtime/library";
 
-const create = catchAsync(async (req: Request, res: Response) => {
+const create = catchAsync<AuthRequest>(async (req: Request, res: Response) => {
   try {
     const { body } = req;
     
-    const { success, data, error } = providerSchema.safeParse(body);
+    const { success, data, error } = providerSchema.create.safeParse(body);
 
     if (!success) 
       return res
@@ -38,14 +40,25 @@ const create = catchAsync(async (req: Request, res: Response) => {
   }
 });
 
-const index = catchAsync(async (req, res) => {
+const index = catchAsync<AuthRequest>(async (req, res) => {
   try {
     const { id } = req.params;
+    const query = req?.query;
+    const fieldsQuery = query?.fields || undefined;
+    const fields = {};
+
+    if (fieldsQuery) {
+      String(fieldsQuery).split(',')
+      .forEach(value => {
+        Object.assign(fields, { [value]: true })
+      })
+    };
 
     const provider = await prismaClient.provider.findUnique({
       where: {
         id,
-      }
+      },
+      ...(fieldsQuery ? { select: fields as Prisma.ProviderSelect<DefaultArgs> } : {})
     });
 
     res.status(200).send(handleResponse<Provider>(true, provider));
@@ -59,12 +72,22 @@ const index = catchAsync(async (req, res) => {
   }
 });
 
-const find = catchAsync(async (req, res) => {
+const find = catchAsync<AuthRequest>(async (req, res) => {
   try {
     const name = req.query?.name;
     const country_code = req?.query?.country_code;
+    const query = req?.query;
+    const fieldsQuery = query?.fields || undefined;
+    const fields = {};
 
-    const query = {
+    if (fieldsQuery) {
+      String(fieldsQuery).split(',')
+      .forEach(value => {
+        Object.assign(fields, { [value]: true })
+      })
+    };
+
+    const queryDB = {
       where: {
         ...(
           name
@@ -84,12 +107,11 @@ const find = catchAsync(async (req, res) => {
           }
           : {}
         )
-      }
+      },
+      ...(fieldsQuery ? { select: fields as Prisma.ProviderSelect<DefaultArgs> } : {}),
     };
 
-    const providers = await prismaClient.provider.findMany(query);
-
-
+    const providers = await prismaClient.provider.findMany(queryDB);
 
     res.status(200).send(handleResponse<Provider[]>(true, providers));
   } catch (error) {
@@ -102,7 +124,7 @@ const find = catchAsync(async (req, res) => {
   }
 });
 
-const edit = catchAsync(async (req, res) => {
+const edit = catchAsync<AuthRequest>(async (req, res) => {
   try {
     const { id } = req.params;
 
@@ -114,7 +136,7 @@ const edit = catchAsync(async (req, res) => {
 
     const { body } = req;
     
-    const { success, data, error } = providerSchema.safeParse(body);
+    const { success, data, error } = providerSchema.edit.safeParse(body);
 
     if (!success) 
       return res
@@ -136,7 +158,7 @@ const edit = catchAsync(async (req, res) => {
   }
 });
 
-const deleteRow = catchAsync(async (req, res) => {
+const deleteRow = catchAsync<AuthRequest>(async (req, res) => {
   try {
     const { id } = req.params;
 

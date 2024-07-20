@@ -1,10 +1,12 @@
 import { Router } from 'express';
-import provider from '@app/provider/routes/crud.route';
-import product from '@app/product/routes/crud.route';
+import auth from './auth';
+import unAuth from './unAuth';
+import log from '@middlewares/log.middleware';
+import authMiddleware from '@middlewares/auth.middleware';
 
 const router = Router();
 
-router.use('/provider', provider);
-router.use('/product', product);
+router.use('', log.unAuth, unAuth);
+router.use('/auth', log.auth, authMiddleware, auth);
 
 export default router;

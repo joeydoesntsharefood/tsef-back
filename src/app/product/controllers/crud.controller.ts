@@ -6,14 +6,15 @@ import handleResponse from "@utils/handleReturn";
 import catchAsync from "@utils/catchAsync";
 import logger from "@utils/logger";
 
-import { Request, Response } from 'express';
-import { Product } from "@prisma/client";
+import { Prisma, Product } from "@prisma/client";
+import { AuthRequest } from "src/types/auth.type";
+import { DefaultArgs } from "@prisma/client/runtime/library";
 
-const create = catchAsync(async (req: Request, res: Response) => {
+const create = catchAsync<AuthRequest>(async (req, res) => {
   try {
     const { body } = req;
     
-    const { success, data, error } = productSchema.safeParse(body);
+    const { success, data, error } = productSchema.create.safeParse(body);
 
     if (!success) 
       return res
@@ -45,11 +46,22 @@ const create = catchAsync(async (req: Request, res: Response) => {
 const index = catchAsync(async (req, res) => {
   try {
     const { id } = req.params;
+    const query = req.query;
+    const fieldsQuery = query?.fields || undefined;
+    const fields = {};
+
+    if (fieldsQuery) {
+      String(fieldsQuery).split(',')
+      .forEach(value => {
+        Object.assign(fields, { [value]: true })
+      })
+    };
 
     const product = await prismaClient.product.findUnique({
       where: {
         id,
-      }
+      },
+      ...(fieldsQuery ? { select: fields as Prisma.ProductSelect<DefaultArgs> } : {})
     });
 
     res.status(200).send(handleResponse<Product>(true, product));
@@ -63,9 +75,23 @@ const index = catchAsync(async (req, res) => {
   }
 });
 
-const find = catchAsync(async (_, res) => {
+const find = catchAsync<AuthRequest>(async (req, res) => {
   try {
-    const products = await prismaClient.product.findMany();
+    const query = req.query;
+
+    const fieldsQuery = query?.fields || undefined;
+    const fields = {};
+
+    if (fieldsQuery) {
+      String(fieldsQuery).split(',')
+      .forEach(value => {
+        Object.assign(fields, { [value]: true })
+      })
+    };
+
+    const products = await prismaClient.product.findMany({
+      ...(fieldsQuery ? { select: fields as Prisma.ProductSelect<DefaultArgs> } : {})
+    });
 
     res.status(200).send(handleResponse<Product[]>(true, products));
   } catch (error) {
@@ -90,7 +116,7 @@ const edit = catchAsync(async (req, res) => {
 
     const { body } = req;
     
-    const { success, data, error } = productSchema.safeParse(body);
+    const { success, data, error } = productSchema.edit.safeParse(body);
 
     if (!success) 
       return res
@@ -112,7 +138,7 @@ const edit = catchAsync(async (req, res) => {
   }
 });
 
-const deleteRow = catchAsync(async (req, res) => {
+const deleteRow = catchAsync<AuthRequest>(async (req, res) => {
   try {
     const { id } = req.params;
 

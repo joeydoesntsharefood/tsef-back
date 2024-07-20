@@ -26,6 +26,10 @@
       "@zod/*": ["src/zod/*"],
       "@middlewares/*": ["src/middlewares/*"]
     },
+    "typeRoots": [
+      "./node_modules/@types",
+      ".scr/@types"
+    ],
     "plugins": [
       { "transform": "ts-transformer-keys/transformer" }
     ]
