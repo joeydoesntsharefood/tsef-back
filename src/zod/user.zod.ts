@@ -7,7 +7,9 @@ const user = {
     .optional(),
   email: z
     .string()
-    .email(),
+    .email({
+      message: 'E-mail invalido.'
+    }),
   password: z
     .string()
     .refine(passwordValidate,{

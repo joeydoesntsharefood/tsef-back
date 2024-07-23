@@ -6,6 +6,6 @@ const unAuth = Router();
 
 unAuth.use('/login', authController.login);
 unAuth.use('/register', authController.register);
-unAuth.use('/utils', utilsController.refreshToken);
+unAuth.use('/utils/refresh-token', utilsController.refreshToken);
 
 export default unAuth;

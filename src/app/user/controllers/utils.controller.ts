@@ -59,7 +59,7 @@ const refreshToken = catchAsync<AuthRequest>(async (req, res) => {
         }
       };
 
-      res.status(200).send(handleResponse<LoginResponse['tokens']>(true, tokens));
+      res.status(200).send(handleResponse<LoginResponse>(true, { user, tokens }));
   } catch (error) {
     logger.error(
       '[user/controller/auth] - refreshToken',

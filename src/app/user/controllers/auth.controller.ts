@@ -5,16 +5,13 @@ import catchAsync from "@utils/catchAsync";
 import logger from "@utils/logger";
 
 import { Request, Response } from 'express';
-import { User } from "@prisma/client";
 import userSchema from "@zod/user.zod";
 
 import bcrypt from 'bcrypt';
 import variables from "@setup/variables";
 import generateToken from "@utils/generateJTW";
 import moment from "moment";
-import { AuthRequest, LoginResponse } from "src/types/auth.type";
-
-import jwt from 'jsonwebtoken';
+import { LoginResponse } from "src/types/auth.type";
 
 const register = catchAsync(async (req: Request, res: Response) => {
   try {
@@ -37,7 +34,40 @@ const register = catchAsync(async (req: Request, res: Response) => {
       },
     });
 
-    res.status(200).send(handleResponse<User>(true, user));
+    const userData = {};
+
+    Object.entries(user)
+      .filter(value => value[0] !== 'password')
+      .forEach(value => Object.assign(userData, { [value[0]]: value[1] }));
+
+    const baseToken = {
+      email: user.email,
+    };
+
+    const accessToken = generateToken({
+      ...baseToken,
+      type: 'acess',
+    }, '2h');
+
+    const refreshToken = generateToken({
+      ...baseToken,
+      type: 'refresh',
+    }, '2 days');
+
+    const date = moment();
+
+    const tokens = {
+      accessToken: {
+        token: accessToken,
+        expiresIn: date.add('2h'), 
+      },
+      refreshToken : {
+        token: refreshToken,
+        expiresIn: date.add('2 days'),
+      }
+    };
+    
+    res.status(200).send(handleResponse<LoginResponse>(true, { user: userData as LoginResponse['user'], tokens }));
   } catch (error) {
     logger.error(
       '[user/controller/auth] - register',
@@ -51,17 +81,15 @@ const register = catchAsync(async (req: Request, res: Response) => {
 const login = catchAsync(async (req: Request, res: Response) => {
   try {
     const { body } = req;
-    
-    const { success, data, error } = userSchema.edit.safeParse(body);
 
-    if (!success) 
+    if (!body?.email && !body?.passsword)
       return res
       .status(400)
-      .json(handleResponse(false, JSON.parse(error?.message)));
+      .json(handleResponse(false, 'Envie todos dados de acesso.'));
 
     const user = await prismaClient.user.findUnique({
       where: {
-        email: data.email,
+        email: body.email,
       },
     });
 
@@ -70,7 +98,7 @@ const login = catchAsync(async (req: Request, res: Response) => {
       .status(400)
       .json(handleResponse(false, 'Senha ou e-mail incorretos.'));
 
-    const compare = await bcrypt.compare(data.password, user.password);
+    const compare = await bcrypt.compare(body.password, user.password);
 
     if (!compare)
       return res
@@ -121,67 +149,7 @@ const login = catchAsync(async (req: Request, res: Response) => {
   }
 });
 
-const refreshToken = catchAsync<AuthRequest>(async (req, res) => {
-  try {
-    const { body } = req;
-
-    if (!body?.refreshToken)
-      return res
-        .status(500)
-        .send(handleResponse(false, 'Por favor envie o refreshToken.'));
-
-    const verify = jwt.verify(body.refreshToken, variables.secretKey);
-    
-    if (typeof verify === 'string')
-      res.status(401).json(handleResponse(false, 'Invalid or expired token'));
-    
-    const decoded = jwt.decode(body.refreshToken);
-    
-    const user = await prismaClient
-      .user
-      .findUnique(
-        { 
-          where: { email: (decoded as unknown as { email: string }).email },
-          select: { email: true, createdAt: true, id: true, name: true, updatedAt: true }
-        },
-      );
-
-      const baseToken = {
-        email: user.email,
-      };
-
-      const date = moment();
-  
-      const tokens = {
-        accessToken: {
-          token: generateToken({
-            ...baseToken,
-            type: 'acess',
-          }, '2h'),
-          expiresIn: date.add('2h'), 
-        },
-        refreshToken : {
-          token: generateToken({
-            ...baseToken,
-            type: 'refresh',
-          }, '2 days'),
-          expiresIn: date.add('2 days'),
-        }
-      };
-
-      res.status(200).send(handleResponse<LoginResponse['tokens']>(true, tokens));
-  } catch (error) {
-    logger.error(
-      '[user/controller/auth] - refreshToken',
-      error,
-    );
-    
-    res.status(400).send(handleResponse<Error>(false, error?.message ?? 'Ocorreu um erro.'));
-  }
-});
-
 export default {
   register,
   login,
-  refreshToken,
 };

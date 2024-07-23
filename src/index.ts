@@ -2,12 +2,15 @@ import express from 'express';
 import variables from '@setup/variables';
 import logger from '@utils/logger';
 import router from './router';
+import cors from 'cors';
 
 const app = express();
 
 const { baseUrl, port } = variables;
 
 app.use(express.json());
+
+app.use(cors());
 
 app.use('/v1', router);
 

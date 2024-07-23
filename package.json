@@ -4,7 +4,8 @@
   "description": "Projeto desenvolvido para o teste prático.",
   "main": "index.js",
   "scripts": {
-    "start:dev": "ts-node-dev -r tsconfig-paths/register --respawn --transpile-only --env-file .env src/index.ts"
+    "start:dev": "ts-node-dev -r tsconfig-paths/register --respawn --transpile-only --env-file .env src/index.ts",
+    "start:prisma": "npx prisma studio"
   },
   "keywords": [],
   "author": "Mateus Sponton M. da Silva",
@@ -26,8 +27,10 @@
   "dependencies": {
     "@prisma/client": "5.17.0",
     "@types/colors": "^1.2.1",
+    "@types/cors": "^2.8.17",
     "bcrypt": "^5.1.1",
     "colors": "^1.4.0",
+    "cors": "^2.8.5",
     "express": "^4.19.2",
     "jsonwebtoken": "^9.0.2",
     "moment": "^2.30.1",
