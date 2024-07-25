@@ -79,18 +79,10 @@ const find = catchAsync<AuthRequest>(async (req, res) => {
   try {
     const query = req.query;
 
-    const fieldsQuery = query?.fields || undefined;
-    const fields = {};
-
-    if (fieldsQuery) {
-      String(fieldsQuery).split(',')
-      .forEach(value => {
-        Object.assign(fields, { [value]: true })
-      })
-    };
-
     const products = await prismaClient.product.findMany({
-      ...(fieldsQuery ? { select: fields as Prisma.ProductSelect<DefaultArgs> } : {})
+      include: {
+        Provider: true,
+      }
     });
 
     res.status(200).send(handleResponse<Product[]>(true, products));

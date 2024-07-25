@@ -10,6 +10,7 @@ import { Request, Response } from 'express';
 import { Prisma, Provider } from "@prisma/client";
 import { AuthRequest } from "src/types/auth.type";
 import { DefaultArgs } from "@prisma/client/runtime/library";
+import verifyCountryCode from "@external/restCountries";
 
 const create = catchAsync<AuthRequest>(async (req: Request, res: Response) => {
   try {
@@ -21,6 +22,13 @@ const create = catchAsync<AuthRequest>(async (req: Request, res: Response) => {
       return res
       .status(400)
       .json(handleResponse(false, JSON.parse(error?.message)));
+
+    const { success: verifyCode } = await verifyCountryCode(data?.country_code);
+
+    if (!verifyCode)
+      return res
+      .status(400)
+      .json(handleResponse(false, [{ message: 'Código invalido', path: ['country_code'] }]));
 
     const provider = await prismaClient.provider.create({
       data: {
@@ -142,6 +150,13 @@ const edit = catchAsync<AuthRequest>(async (req, res) => {
       return res
       .status(400)
       .json(handleResponse(false, JSON.parse(error?.message)));
+
+    const { success: verifyCode } = await verifyCountryCode(data?.country_code);
+
+    if (!verifyCode)
+      return res
+      .status(400)
+      .json(handleResponse(false, [{ message: 'Código invalido', path: ['country_code'] }]));
 
     Object.assign(provider, data);
 

@@ -10,7 +10,7 @@ const provider = {
     .string({
       message: 'Necessário um código do país do fornecedor.'
     })
-    .min(5, "Código muito curto."),
+    .min(2, "Código muito curto."),
 };
 
 const create = z.object(provider);
