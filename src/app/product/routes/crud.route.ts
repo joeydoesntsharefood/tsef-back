@@ -7,7 +7,8 @@ router.post('/', crud.create);
 
 router.get('/', crud.find);
 router.get('/:id', crud.index);
- 
+router.get('/data/count', crud.count);
+
 router.patch('/:id', crud.edit);
 
 router.delete('/:id', crud.deleteRow);

@@ -11,6 +11,7 @@ import { Prisma, Provider } from "@prisma/client";
 import { AuthRequest } from "src/types/auth.type";
 import { DefaultArgs } from "@prisma/client/runtime/library";
 import verifyCountryCode from "@external/restCountries";
+import { Pagination } from "src/types/globals";
 
 const create = catchAsync<AuthRequest>(async (req: Request, res: Response) => {
   try {
@@ -87,6 +88,11 @@ const find = catchAsync<AuthRequest>(async (req, res) => {
     const query = req?.query;
     const fieldsQuery = query?.fields || undefined;
     const fields = {};
+    const page = query?.page ? Number(query?.page) : 1;
+    const pageSize = query?.pageSize ? Number(query?.pageSize) : 10;
+
+    const skip = (page - 1) * pageSize;
+    const take = pageSize;
 
     if (fieldsQuery) {
       String(fieldsQuery).split(',')
@@ -109,19 +115,30 @@ const find = catchAsync<AuthRequest>(async (req, res) => {
         ...(
           country_code
           ? {
-            country_code: {
-              equals: String(country_code ?? ''),
-            }
+            country_code: String(country_code)
           }
           : {}
         )
       },
       ...(fieldsQuery ? { select: fields as Prisma.ProviderSelect<DefaultArgs> } : {}),
+      skip,
+      take,
     };
 
-    const providers = await prismaClient.provider.findMany(queryDB);
+    const data= await prismaClient.provider.findMany(queryDB);
 
-    res.status(200).send(handleResponse<Provider[]>(true, providers));
+    const totalDocs = await prismaClient.provider.count({ where: queryDB.where });
+    
+    const totalPages = Math.ceil(totalDocs / pageSize);
+    
+    const pagination: Pagination<Provider[]>['pagination'] = {
+      totalDocs,
+      page,
+      pageSize,
+      totalPages,
+    };
+
+    res.status(200).send(handleResponse<Pagination<Provider[]>>(true, { data, pagination }));
   } catch (error) {
     logger.error(
       '[provider/controller/crud] - find',
@@ -136,7 +153,7 @@ const edit = catchAsync<AuthRequest>(async (req, res) => {
   try {
     const { id } = req.params;
 
-    const provider = await prismaClient.provider.findUnique({ 
+    const provider = await prismaClient.provider.findUnique({
       where: {
         id,
       }
@@ -194,6 +211,42 @@ const deleteRow = catchAsync<AuthRequest>(async (req, res) => {
   }
 });
 
+const getCountryCodes = catchAsync<AuthRequest>(async (_, res) => {
+  try {
+    const uniqueCountryCodes = await prismaClient.provider.findMany({
+      distinct: ['country_code'],
+      select: {
+        country_code: true,
+      },
+    });
+  
+    const countrysCodes = uniqueCountryCodes.map(item => item.country_code);
+
+    res.status(200).send(handleResponse(true, countrysCodes));
+  } catch (error) {
+    logger.error(
+      '[provider/controller/crud] - getCountryCodes',
+      error,
+    );
+    
+    res.status(400).send(handleResponse<Error>(false, error?.message ?? 'Ocorreu um erro.'));
+  }
+});
+
+const count = catchAsync<AuthRequest>(async (_, res) => {
+  try {
+    const total = await prismaClient.provider.count();
+
+    res.status(200).send(handleResponse(true, total));
+  } catch (error) {
+    logger.error(
+      '[provider/controller/crud] - count',
+      error,
+    );
+    
+    res.status(400).send(handleResponse<Error>(false, error?.message ?? 'Ocorreu um erro.'));
+  }
+});
 
 export default {
   create,
@@ -201,4 +254,6 @@ export default {
   find,
   edit,
   deleteRow,
+  getCountryCodes,
+  count,
 };

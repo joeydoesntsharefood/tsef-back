@@ -7,6 +7,8 @@ router.post('/', crud.create);
 
 router.get('/', crud.find);
 router.get('/:id', crud.index);
+router.get('/data/country-codes', crud.getCountryCodes);
+router.get('/data/count', crud.count);
  
 router.patch('/:id', crud.edit);
 

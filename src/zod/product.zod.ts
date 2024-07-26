@@ -8,7 +8,6 @@ const product = {
     .min(5, "Nome muito curto."),
   description: z
     .string()
-    .min(20, "Descrição muito curta.")
     .optional(),
   price: z
     .number({
@@ -20,12 +19,15 @@ const product = {
     .optional(),
   category: z
     .string({
-      message: 'Necessário um código de fornecedor.'
-    }),
+      message: 'Necessário uma categória para esse produto.'
+    })
+    .length(0, 'Necessário uma categória para esse produto.')
+    .min(3, 'Categória muito curta.'),
   providerId: z
     .string({
-      message: ''
+      message: 'Preciso de um fornecedor para esse produto.'
     })
+    .length(0, 'Preciso de um fornecedor para esse produto.')
     .min(5, 'Código de fornecedor muito pequeno.'),
 };
 
