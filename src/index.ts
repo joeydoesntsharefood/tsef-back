@@ -42,3 +42,5 @@ app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec))
 app.listen(port, () => {
   logger.info(`Server is running at ${baseUrl}:${port}`);
 });
+
+export default app;
