@@ -1,4 +1,4 @@
-Inicie o projeto seguindo as necessidades da variaveis de ambiente,
+Inicie o projeto seguindo as necessidades da variaveis de ambiente apresentadas no .env.example,
 abaixo exemplos:
  - DATABASE_URL="file:./dev.db"
  - BASE_URL="http://localhost"
